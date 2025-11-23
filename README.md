@@ -219,6 +219,20 @@ For demonstration purposes, the training service simulates a training process:
 
 In a production environment, you would replace `backend/trainer.py` with actual ML training logic using PyTorch, TensorFlow, or other frameworks.
 
+## ML Core Training Engine
+
+The repository also ships with a reusable training engine located at `ml_core/training`. The `Trainer` class wires together dataset loaders, model factories, optimizers, schedulers, checkpointing, and metric tracking. It emits structured JSON traces for UI consumption and can be run synchronously or scheduled as an asyncio background task.
+
+### Running the worked example
+
+A complete example that trains a small CNN on synthetic image data lives at `examples/train_cnn.py`. Running the script will execute the end-to-end training loop and save checkpoints + metrics under `artifacts/cnn_example`:
+
+```bash
+python examples/train_cnn.py
+```
+
+Review the generated trace (`trace.jsonl`) and `metrics.json` files inside the artifact directory to inspect how the trainer reports progress.
+
 ## Development
 
 ### Adding New Model Presets
