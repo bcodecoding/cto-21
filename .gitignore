@@ -51,6 +51,7 @@ ui/.vite/
 
 # Run data
 runs/
+artifacts/
 *.db
 *.sqlite
 
