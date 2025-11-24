@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
 
-import torch
 from torch.utils.data import DataLoader, Dataset
 
 from data_pipeline.base import BaseDataset
@@ -22,15 +20,15 @@ class DatasetRegistry:
 
     def __init__(self) -> None:
         """Initialize registry."""
-        self._datasets: Dict[str, BaseDataset] = {}
-        self._configs: Dict[str, DatasetConfig] = {}
-        self._loaders: Dict[str, Callable] = {}
+        self._datasets: dict[str, BaseDataset] = {}
+        self._configs: dict[str, DatasetConfig] = {}
+        self._loaders: dict[str, Callable] = {}
 
     def register_dataset(
         self,
         name: str,
         dataset: BaseDataset,
-        config: Optional[DatasetConfig] = None,
+        config: DatasetConfig | None = None,
     ) -> None:
         """Register a dataset.
 
@@ -56,7 +54,7 @@ class DatasetRegistry:
         """
         self._loaders[dataset_type] = loader_fn
 
-    def get_dataset(self, name: str) -> Optional[BaseDataset]:
+    def get_dataset(self, name: str) -> BaseDataset | None:
         """Get registered dataset by name.
 
         Args:
@@ -67,7 +65,7 @@ class DatasetRegistry:
         """
         return self._datasets.get(name)
 
-    def get_config(self, name: str) -> Optional[DatasetConfig]:
+    def get_config(self, name: str) -> DatasetConfig | None:
         """Get configuration for a dataset.
 
         Args:

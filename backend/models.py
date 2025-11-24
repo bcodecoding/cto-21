@@ -1,7 +1,6 @@
-from pydantic import BaseModel
-from typing import Dict, Optional, List
 from enum import Enum
-from datetime import datetime
+
+from pydantic import BaseModel
 
 
 class RunStatus(str, Enum):
@@ -15,7 +14,7 @@ class ModelPreset(BaseModel):
     id: str
     name: str
     description: str
-    hyperparameters: Dict[str, float]
+    hyperparameters: dict[str, float]
 
 
 class Dataset(BaseModel):
@@ -29,7 +28,7 @@ class Dataset(BaseModel):
 class TrainingRequest(BaseModel):
     model_id: str
     dataset_id: str
-    hyperparameters: Optional[Dict[str, float]] = None
+    hyperparameters: dict[str, float] | None = None
 
 
 class TrainingRun(BaseModel):
@@ -37,21 +36,21 @@ class TrainingRun(BaseModel):
     model_id: str
     dataset_id: str
     status: RunStatus
-    hyperparameters: Dict[str, float]
+    hyperparameters: dict[str, float]
     created_at: str
-    started_at: Optional[str] = None
-    completed_at: Optional[str] = None
-    logs: List[str] = []
-    metrics: Dict[str, float] = {}
-    error: Optional[str] = None
+    started_at: str | None = None
+    completed_at: str | None = None
+    logs: list[str] = []
+    metrics: dict[str, float] = {}
+    error: str | None = None
 
 
 class InferenceRequest(BaseModel):
     run_id: str
-    input_data: Dict
+    input_data: dict
 
 
 class InferenceResponse(BaseModel):
     run_id: str
-    prediction: Dict
+    prediction: dict
     timestamp: str

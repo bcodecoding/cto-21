@@ -63,7 +63,9 @@ class TestModelRegistry(unittest.TestCase):
         self.assertEqual(model.config.num_classes, 5)
 
     def test_create_with_config_object(self):
-        config = DenseMLPConfig(input_dim=100, num_classes=3, hidden_layers=(256, 128, 64))
+        config = DenseMLPConfig(
+            input_dim=100, num_classes=3, hidden_layers=(256, 128, 64)
+        )
         model = self.registry.create("dense_mlp", config=config)
         self.assertEqual(model.config.input_dim, 100)
         self.assertEqual(model.config.num_classes, 3)

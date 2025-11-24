@@ -1,8 +1,8 @@
 import asyncio
 import random
-from typing import Dict
-from backend.storage import RunStore
+
 from backend.models import RunStatus
+from backend.storage import RunStore
 
 
 class TrainerService:
@@ -21,11 +21,11 @@ class TrainerService:
         try:
             # Update status to running
             self.run_store.update_status(run_id, RunStatus.RUNNING)
-            self.run_store.append_log(run_id, f"Starting training for model: {run.model_id}")
-            self.run_store.append_log(run_id, f"Using dataset: {run.dataset_id}")
             self.run_store.append_log(
-                run_id, f"Hyperparameters: {run.hyperparameters}"
+                run_id, f"Starting training for model: {run.model_id}"
             )
+            self.run_store.append_log(run_id, f"Using dataset: {run.dataset_id}")
+            self.run_store.append_log(run_id, f"Hyperparameters: {run.hyperparameters}")
 
             epochs = int(run.hyperparameters.get("epochs", 3))
 

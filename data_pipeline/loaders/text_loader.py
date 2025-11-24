@@ -5,11 +5,10 @@ from __future__ import annotations
 import csv
 import json
 from pathlib import Path
-from typing import Optional
 
 import torch
 
-from data_pipeline.base import BaseDataset, Compose
+from data_pipeline.base import BaseDataset
 from data_pipeline.configs import TextDatasetConfig
 from data_pipeline.transforms import SimpleTokenizer
 
@@ -30,9 +29,9 @@ class TextDataset(BaseDataset):
         format: str = "jsonl",
         prompt_column: str = "prompt",
         label_column: str = "label",
-        max_length: Optional[int] = None,
-        tokenizer: Optional[SimpleTokenizer] = None,
-        label_mapping: Optional[dict[str, int]] = None,
+        max_length: int | None = None,
+        tokenizer: SimpleTokenizer | None = None,
+        label_mapping: dict[str, int] | None = None,
     ) -> None:
         """Initialize text dataset.
 
@@ -82,7 +81,7 @@ class TextDataset(BaseDataset):
 
     def _load_jsonl(self) -> None:
         """Load data from JSONL file."""
-        with open(self.file_path, "r", encoding="utf-8") as f:
+        with open(self.file_path, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line:
@@ -99,7 +98,7 @@ class TextDataset(BaseDataset):
 
     def _load_csv(self) -> None:
         """Load data from CSV file."""
-        with open(self.file_path, "r", encoding="utf-8") as f:
+        with open(self.file_path, encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 prompt = row.get(self.prompt_column, "")

@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, Generic, List, Literal, Optional, Tuple, Type, TypeVar
+from typing import Any, Generic, Literal, TypeVar
 
 import torch
 from torch import Tensor, nn
-
 
 InputType = Literal["image", "text", "tabular", "sequence"]
 ActivationName = Literal["relu", "gelu", "tanh", "leaky_relu", "elu"]
@@ -19,6 +18,7 @@ TransformerPooling = Literal["mean", "cls"]
 # ---------------------------------------------------------------------------
 # Helper utilities
 # ---------------------------------------------------------------------------
+
 
 def _activation_from_name(name: ActivationName) -> nn.Module:
     normalized = name.lower()
@@ -35,7 +35,9 @@ def _activation_from_name(name: ActivationName) -> nn.Module:
     raise ValueError(f"Unsupported activation '{name}'")
 
 
-def _broadcast_kernel_sizes(kernel_sizes: Tuple[int, ...], length: int) -> Tuple[int, ...]:
+def _broadcast_kernel_sizes(
+    kernel_sizes: tuple[int, ...], length: int
+) -> tuple[int, ...]:
     if len(kernel_sizes) == length:
         return kernel_sizes
     if len(kernel_sizes) == 1:
@@ -57,9 +59,9 @@ class ModelMetadata:
     name: str
     input_type: InputType
     task: str = "classification"
-    description: Optional[str] = None
+    description: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -67,7 +69,7 @@ class ModelMetadata:
 class ModelConfig:
     """Base configuration schema for model definitions."""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -96,7 +98,11 @@ class BaseModel(nn.Module):
 
     def load(self, path: str, map_location: torch.device | str = "cpu") -> None:
         payload = torch.load(path, map_location=map_location)
-        state_dict = payload["state_dict"] if isinstance(payload, dict) and "state_dict" in payload else payload
+        state_dict = (
+            payload["state_dict"]
+            if isinstance(payload, dict) and "state_dict" in payload
+            else payload
+        )
         self.load_state_dict(state_dict)
 
     def forward(self, x: Tensor) -> Tensor:  # pragma: no cover - abstract method
@@ -114,19 +120,19 @@ class SimpleCNNConfig(ModelConfig):
     input_height: int = 28
     input_width: int = 28
     num_classes: int = 10
-    conv_channels: Tuple[int, ...] = (16, 32)
-    kernel_sizes: Tuple[int, ...] = (3,)
+    conv_channels: tuple[int, ...] = (16, 32)
+    kernel_sizes: tuple[int, ...] = (3,)
     activation: ActivationName = "relu"
     dropout: float = 0.25
     use_batch_norm: bool = True
-    classifier_hidden: Optional[int] = 128
+    classifier_hidden: int | None = 128
 
 
 @dataclass
 class DenseMLPConfig(ModelConfig):
     input_dim: int = 32
     num_classes: int = 2
-    hidden_layers: Tuple[int, ...] = (128, 64)
+    hidden_layers: tuple[int, ...] = (128, 64)
     activation: ActivationName = "relu"
     dropout: float = 0.1
     use_batch_norm: bool = True
@@ -173,10 +179,14 @@ class SimpleCNNClassifier(BaseModel):
         super().__init__(metadata)
         self.config = config
 
-        kernels = _broadcast_kernel_sizes(config.kernel_sizes, len(config.conv_channels))
-        layers: List[nn.Module] = []
+        kernels = _broadcast_kernel_sizes(
+            config.kernel_sizes, len(config.conv_channels)
+        )
+        layers: list[nn.Module] = []
         in_channels = config.input_channels
-        for out_channels, kernel_size in zip(config.conv_channels, kernels):
+        for out_channels, kernel_size in zip(
+            config.conv_channels, kernels, strict=True
+        ):
             layers.append(
                 nn.Conv2d(
                     in_channels,
@@ -195,7 +205,7 @@ class SimpleCNNClassifier(BaseModel):
         self.feature_extractor = nn.Sequential(*layers) if layers else nn.Identity()
 
         self._flattened_dim = self._infer_flattened_dim()
-        classifier_layers: List[nn.Module] = []
+        classifier_layers: list[nn.Module] = []
         in_features = self._flattened_dim
         if config.classifier_hidden is not None:
             classifier_layers.append(nn.Linear(in_features, config.classifier_hidden))
@@ -233,7 +243,7 @@ class DenseMLPClassifier(BaseModel):
         super().__init__(metadata)
         self.config = config
 
-        layers: List[nn.Module] = []
+        layers: list[nn.Module] = []
         in_features = config.input_dim
         for hidden_size in config.hidden_layers:
             layers.append(nn.Linear(in_features, hidden_size))
@@ -260,7 +270,7 @@ class SimpleRNNClassifier(BaseModel):
         super().__init__(metadata)
         self.config = config
 
-        rnn_cls_map: Dict[RNNType, Type[nn.Module]] = {
+        rnn_cls_map: dict[RNNType, type[nn.Module]] = {
             "gru": nn.GRU,
             "lstm": nn.LSTM,
             "rnn": nn.RNN,
@@ -275,7 +285,11 @@ class SimpleRNNClassifier(BaseModel):
             dropout=dropout,
             batch_first=True,
         )
-        self.pooling = config.output_pooling if config.output_pooling in {"last", "mean", "max"} else "last"
+        self.pooling = (
+            config.output_pooling
+            if config.output_pooling in {"last", "mean", "max"}
+            else "last"
+        )
         features = config.hidden_size * (2 if config.bidirectional else 1)
         self.classifier = nn.Linear(features, config.num_classes)
 
@@ -310,9 +324,13 @@ class TransformerEncoderClassifier(BaseModel):
             activation=config.activation,
             batch_first=True,
         )
-        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=config.num_layers)
+        self.encoder = nn.TransformerEncoder(
+            encoder_layer, num_layers=config.num_layers
+        )
         max_positions = config.seq_len + (1 if config.pooling == "cls" else 0)
-        self.positional_encoding = nn.Parameter(torch.zeros(1, max_positions, config.model_dim))
+        self.positional_encoding = nn.Parameter(
+            torch.zeros(1, max_positions, config.model_dim)
+        )
         if config.pooling == "cls":
             self.cls_token = nn.Parameter(torch.zeros(1, 1, config.model_dim))
         else:
@@ -356,16 +374,16 @@ TConfig = TypeVar("TConfig", bound=ModelConfig)
 
 @dataclass
 class ModelSpec(Generic[TConfig]):
-    model_cls: Type[BaseModel]
-    config_cls: Type[TConfig]
-    default_config: Optional[TConfig] = None
+    model_cls: type[BaseModel]
+    config_cls: type[TConfig]
+    default_config: TConfig | None = None
 
 
 class ModelRegistry:
     """Registry of available model builders."""
 
     def __init__(self) -> None:
-        self._registry: Dict[str, ModelSpec[Any]] = {}
+        self._registry: dict[str, ModelSpec[Any]] = {}
         self._register_defaults()
 
     def _register_defaults(self) -> None:
@@ -397,16 +415,18 @@ class ModelRegistry:
     def register(
         self,
         name: str,
-        model_cls: Type[BaseModel],
-        config_cls: Type[TConfig],
-        default_config: Optional[TConfig] = None,
+        model_cls: type[BaseModel],
+        config_cls: type[TConfig],
+        default_config: TConfig | None = None,
     ) -> None:
-        self._registry[name] = ModelSpec(model_cls=model_cls, config_cls=config_cls, default_config=default_config)
+        self._registry[name] = ModelSpec(
+            model_cls=model_cls, config_cls=config_cls, default_config=default_config
+        )
 
     def create(
         self,
         name: str,
-        config: Optional[ModelConfig] = None,
+        config: ModelConfig | None = None,
         **config_kwargs: Any,
     ) -> BaseModel:
         if name not in self._registry:
@@ -420,7 +440,9 @@ class ModelRegistry:
                     f"Config for '{name}' must be an instance of {spec.config_cls.__name__}."
                 )
             if config_kwargs:
-                raise ValueError("Cannot provide config kwargs when a config object is supplied.")
+                raise ValueError(
+                    "Cannot provide config kwargs when a config object is supplied."
+                )
         else:
             base_kwargs = spec.default_config.to_dict() if spec.default_config else {}
             base_kwargs.update(config_kwargs)
@@ -428,10 +450,10 @@ class ModelRegistry:
 
         return spec.model_cls(config)
 
-    def list_models(self) -> List[str]:
+    def list_models(self) -> list[str]:
         return sorted(self._registry.keys())
 
-    def get_config_class(self, name: str) -> Type[ModelConfig]:
+    def get_config_class(self, name: str) -> type[ModelConfig]:
         if name not in self._registry:
             available = ", ".join(sorted(self._registry.keys()))
             raise ValueError(f"Model '{name}' not found. Available models: {available}")
@@ -454,7 +476,9 @@ def create_optimizer(
         return torch.optim.Adam(model.parameters(), lr=learning_rate, **kwargs)
     if optimizer_type == "sgd":
         momentum = kwargs.pop("momentum", 0.9)
-        return torch.optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, **kwargs)
+        return torch.optim.SGD(
+            model.parameters(), lr=learning_rate, momentum=momentum, **kwargs
+        )
     if optimizer_type == "adamw":
         return torch.optim.AdamW(model.parameters(), lr=learning_rate, **kwargs)
     raise ValueError(f"Unknown optimizer type: {optimizer_type}")
@@ -469,14 +493,18 @@ def create_scheduler(
     if scheduler_type == "step":
         step_size = kwargs.get("step_size", 10)
         gamma = kwargs.get("gamma", 0.1)
-        return torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
+        return torch.optim.lr_scheduler.StepLR(
+            optimizer, step_size=step_size, gamma=gamma
+        )
     if scheduler_type == "cosine":
         t_max = kwargs.get("T_max", kwargs.get("t_max", 50))
         return torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=t_max)
     if scheduler_type == "plateau":
         mode = kwargs.get("mode", "min")
         patience = kwargs.get("patience", 5)
-        return torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode=mode, patience=patience)
+        return torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode=mode, patience=patience
+        )
     raise ValueError(f"Unknown scheduler type: {scheduler_type}")
 
 

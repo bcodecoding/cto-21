@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import csv
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Iterable, List, Optional, Sequence, Tuple
 
 import torch
 from torch.utils.data import DataLoader, Dataset, random_split
@@ -16,9 +16,9 @@ class CSVDataset(Dataset):
     def __init__(
         self,
         csv_path: str | Path,
-        feature_columns: Optional[Sequence[str]] = None,
-        label_column: Optional[str] = "label",
-        label_mapping: Optional[dict[str, int]] = None,
+        feature_columns: Sequence[str] | None = None,
+        label_column: str | None = "label",
+        label_mapping: dict[str, int] | None = None,
         dtype: torch.dtype = torch.float32,
     ) -> None:
         path = Path(csv_path)
@@ -36,7 +36,7 @@ class CSVDataset(Dataset):
             self._feature_columns = list(feature_columns)
             self._label_column = label_column
             self._dtype = dtype
-            self._samples: List[tuple[torch.Tensor, torch.Tensor] | torch.Tensor] = []
+            self._samples: list[tuple[torch.Tensor, torch.Tensor] | torch.Tensor] = []
             mapping = dict(label_mapping) if label_mapping is not None else {}
 
             for row in reader:
@@ -74,7 +74,7 @@ def create_data_loaders(
     shuffle: bool = True,
     num_workers: int = 0,
     seed: int = 13,
-) -> Tuple[DataLoader, Optional[DataLoader]]:
+) -> tuple[DataLoader, DataLoader | None]:
     """Split a dataset into train/val loaders."""
 
     if not 0 <= val_ratio < 1:
@@ -93,7 +93,9 @@ def create_data_loaders(
     val_len = max(1, int(total_len * val_ratio))
     train_len = total_len - val_len
     generator = torch.Generator().manual_seed(seed)
-    train_dataset, val_dataset = random_split(dataset, [train_len, val_len], generator=generator)
+    train_dataset, val_dataset = random_split(
+        dataset, [train_len, val_len], generator=generator
+    )
 
     train_loader = DataLoader(
         train_dataset,

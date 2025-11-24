@@ -1,10 +1,9 @@
 import json
 import uuid
-from typing import Dict, List, Optional
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
-from backend.models import TrainingRun, RunStatus
+from backend.models import RunStatus, TrainingRun
 
 
 class RunStore:
@@ -15,7 +14,7 @@ class RunStore:
     def _run_file(self, run_id: str) -> Path:
         return self.storage_path / f"{run_id}.json"
 
-    def list_runs(self) -> List[TrainingRun]:
+    def list_runs(self) -> list[TrainingRun]:
         runs = []
         for file in self.storage_path.glob("*.json"):
             try:
@@ -25,7 +24,7 @@ class RunStore:
                 continue
         return sorted(runs, key=lambda run: run.created_at, reverse=True)
 
-    def get_run(self, run_id: str) -> Optional[TrainingRun]:
+    def get_run(self, run_id: str) -> TrainingRun | None:
         file = self._run_file(run_id)
         if not file.exists():
             return None
@@ -38,7 +37,7 @@ class RunStore:
         return run
 
     def create_run(
-        self, model_id: str, dataset_id: str, hyperparameters: Dict[str, float]
+        self, model_id: str, dataset_id: str, hyperparameters: dict[str, float]
     ) -> TrainingRun:
         run = TrainingRun(
             id=str(uuid.uuid4()),
@@ -53,8 +52,8 @@ class RunStore:
         return self.save_run(run)
 
     def update_status(
-        self, run_id: str, status: RunStatus, error: Optional[str] = None
-    ) -> Optional[TrainingRun]:
+        self, run_id: str, status: RunStatus, error: str | None = None
+    ) -> TrainingRun | None:
         run = self.get_run(run_id)
         if not run:
             return None
@@ -67,14 +66,16 @@ class RunStore:
         run.error = error
         return self.save_run(run)
 
-    def append_log(self, run_id: str, message: str) -> Optional[TrainingRun]:
+    def append_log(self, run_id: str, message: str) -> TrainingRun | None:
         run = self.get_run(run_id)
         if not run:
             return None
         run.logs.append(f"[{datetime.utcnow().isoformat()}] {message}")
         return self.save_run(run)
 
-    def update_metrics(self, run_id: str, metrics: Dict[str, float]) -> Optional[TrainingRun]:
+    def update_metrics(
+        self, run_id: str, metrics: dict[str, float]
+    ) -> TrainingRun | None:
         run = self.get_run(run_id)
         if not run:
             return None

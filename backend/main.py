@@ -1,8 +1,6 @@
-import asyncio
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import List
 from uuid import uuid4
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -45,7 +43,7 @@ trainer_service = TrainerService(run_store)
 
 
 # Utility functions
-def list_datasets() -> List[Dataset]:
+def list_datasets() -> list[Dataset]:
     datasets = []
     for file in DATA_DIR.glob("**/*"):
         if file.is_file():
@@ -55,18 +53,20 @@ def list_datasets() -> List[Dataset]:
                     name=file.name,
                     path=str(file),
                     size=file.stat().st_size,
-                    uploaded_at=datetime.fromtimestamp(file.stat().st_mtime).isoformat(),
+                    uploaded_at=datetime.fromtimestamp(
+                        file.stat().st_mtime
+                    ).isoformat(),
                 )
             )
     return datasets
 
 
-@app.get("/models", response_model=List[ModelPreset])
+@app.get("/models", response_model=list[ModelPreset])
 def get_models():
     return [ModelPreset(**model) for model in MODEL_PRESETS]
 
 
-@app.get("/datasets", response_model=List[Dataset])
+@app.get("/datasets", response_model=list[Dataset])
 def get_datasets():
     return list_datasets()
 
@@ -113,7 +113,7 @@ async def start_training(request: TrainingRequest):
     return run
 
 
-@app.get("/runs", response_model=List[TrainingRun])
+@app.get("/runs", response_model=list[TrainingRun])
 def list_runs():
     return run_store.list_runs()
 

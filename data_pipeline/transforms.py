@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
 import torch
 import torch.nn.functional as F
 
@@ -13,7 +11,7 @@ from data_pipeline.base import Transform
 class ImageResize(Transform):
     """Resize image to target size."""
 
-    def __init__(self, size: Tuple[int, int]) -> None:
+    def __init__(self, size: tuple[int, int]) -> None:
         """Initialize resize transform.
 
         Args:
@@ -37,7 +35,9 @@ class ImageResize(Transform):
             image = image.unsqueeze(0)
         # Add batch dimension for interpolation
         image = image.unsqueeze(0)
-        resized = F.interpolate(image, size=self.size, mode="bilinear", align_corners=False)
+        resized = F.interpolate(
+            image, size=self.size, mode="bilinear", align_corners=False
+        )
         return resized.squeeze(0)
 
     def __repr__(self) -> str:
@@ -49,8 +49,8 @@ class ImageNormalize(Transform):
 
     def __init__(
         self,
-        mean: Tuple[float, ...] = (0.485, 0.456, 0.406),
-        std: Tuple[float, ...] = (0.229, 0.224, 0.225),
+        mean: tuple[float, ...] = (0.485, 0.456, 0.406),
+        std: tuple[float, ...] = (0.229, 0.224, 0.225),
     ) -> None:
         """Initialize normalize transform.
 
@@ -84,7 +84,9 @@ class ImageNormalize(Transform):
 class SimpleTokenizer(Transform):
     """Simple space-based tokenizer for text."""
 
-    def __init__(self, max_length: Optional[int] = None, vocab_size: Optional[int] = None) -> None:
+    def __init__(
+        self, max_length: int | None = None, vocab_size: int | None = None
+    ) -> None:
         """Initialize tokenizer.
 
         Args:
@@ -139,10 +141,10 @@ class NumericScaler(Transform):
     def __init__(
         self,
         method: str = "minmax",
-        feature_mins: Optional[torch.Tensor] = None,
-        feature_maxs: Optional[torch.Tensor] = None,
-        feature_means: Optional[torch.Tensor] = None,
-        feature_stds: Optional[torch.Tensor] = None,
+        feature_mins: torch.Tensor | None = None,
+        feature_maxs: torch.Tensor | None = None,
+        feature_means: torch.Tensor | None = None,
+        feature_stds: torch.Tensor | None = None,
     ) -> None:
         """Initialize scaler.
 
@@ -182,7 +184,9 @@ class NumericScaler(Transform):
             Scaled features
         """
         if self.method == "minmax" and self.feature_mins is not None:
-            scaled = (features - self.feature_mins) / (self.feature_maxs - self.feature_mins + 1e-8)
+            scaled = (features - self.feature_mins) / (
+                self.feature_maxs - self.feature_mins + 1e-8
+            )
             return torch.clamp(scaled, 0, 1)
         elif self.method == "standard" and self.feature_means is not None:
             return (features - self.feature_means) / (self.feature_stds + 1e-8)

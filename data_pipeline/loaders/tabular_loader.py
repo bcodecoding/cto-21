@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import csv
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Optional, Sequence
 
 import torch
 
@@ -24,9 +24,9 @@ class TabularDataset(BaseDataset):
         csv_path: str | Path,
         name: str = "tabular_dataset",
         description: str = "",
-        feature_columns: Optional[Sequence[str]] = None,
-        label_column: Optional[str] = None,
-        label_mapping: Optional[dict[str, int]] = None,
+        feature_columns: Sequence[str] | None = None,
+        label_column: str | None = None,
+        label_mapping: dict[str, int] | None = None,
         normalize: bool = True,
         dtype: torch.dtype = torch.float32,
     ) -> None:
@@ -73,7 +73,7 @@ class TabularDataset(BaseDataset):
                         dtype=dtype,
                     )
                 except (KeyError, ValueError) as e:
-                    raise ValueError(f"Error parsing row {row}: {e}")
+                    raise ValueError(f"Error parsing row {row}: {e}") from e
 
                 if label_column is None:
                     self._samples.append(features)
