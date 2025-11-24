@@ -10,16 +10,13 @@ import torch
 class Metric(Protocol):
     """Interface for all metrics used by the trainer."""
 
-    def reset(self) -> None:
-        ...
+    def reset(self) -> None: ...
 
-    def update(self, predictions: torch.Tensor, targets: torch.Tensor) -> None:
-        ...
+    def update(self, predictions: torch.Tensor, targets: torch.Tensor) -> None: ...
 
-    def compute(self) -> float:
-        ...
+    def compute(self) -> float: ...
 
-    def clone(self) -> "Metric":  # pragma: no cover - interface method
+    def clone(self) -> Metric:  # pragma: no cover - interface method
         ...
 
 
@@ -46,7 +43,7 @@ class AccuracyMetric:
             return 0.0
         return self._correct / self._total
 
-    def clone(self) -> "AccuracyMetric":
+    def clone(self) -> AccuracyMetric:
         return AccuracyMetric()
 
 

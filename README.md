@@ -2,6 +2,63 @@
 
 A full-stack machine learning training platform with FastAPI backend and React frontend. This platform allows you to configure training runs, manage datasets, start training jobs, and monitor progress in real-time.
 
+## Quick Start
+
+### Prerequisites
+
+- Python 3.11+ 
+- Node.js 20+ and npm
+- [uv](https://docs.astral.sh/uv/) (recommended Python package manager)
+
+### Installation
+
+1. Clone the repository and navigate to the project directory
+2. Install dependencies and setup the development environment:
+
+```bash
+make install
+```
+
+This will:
+- Install Python dependencies using `uv`
+- Install Node.js dependencies for the frontend
+- Set up the development environment
+
+### Development
+
+Start both backend and frontend servers:
+
+```bash
+make dev
+```
+
+Or start them individually:
+
+```bash
+make api    # Start FastAPI backend on http://localhost:8000
+make ui     # Start React frontend on http://localhost:5173
+```
+
+### Development Commands
+
+- `make install` - Install all dependencies
+- `make dev` - Start both development servers
+- `make api` - Start FastAPI backend only
+- `make ui` - Start React frontend only
+- `make lint` - Run linting checks
+- `make format` - Format code with black and ruff
+- `make test` - Run tests
+- `make clean` - Clean cache and build files
+- `make check` - Run all checks (lint + test)
+
+### Code Quality
+
+The project uses:
+- **Black** for code formatting
+- **Ruff** for linting and import sorting
+- **pytest** for testing
+- **pre-commit** for git hooks (optional)
+
 ## Features
 
 - **Model Presets**: Choose from pre-configured model architectures (ResNet-50, BERT Base, Custom)

@@ -24,7 +24,12 @@ wheels/
 venv/
 env/
 ENV/
-.venv
+.venv/
+.conda/
+
+# uv
+.uv-cache/
+uv.lock
 
 # IDE
 .vscode/
@@ -37,6 +42,11 @@ ENV/
 .pytest_cache/
 .coverage
 htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Pre-commit
+.pre-commit-state/
 
 # Node
 node_modules/

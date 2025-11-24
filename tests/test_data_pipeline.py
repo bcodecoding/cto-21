@@ -10,7 +10,6 @@ from torch.utils.data import DataLoader
 
 from data_pipeline import (
     DatasetConfig,
-    DatasetRegistry,
     ImageDataset,
     ImageDatasetConfig,
     TabularDataset,
@@ -19,7 +18,12 @@ from data_pipeline import (
     TextDatasetConfig,
 )
 from data_pipeline.registries import create_default_registry
-from data_pipeline.transforms import ImageNormalize, ImageResize, NumericScaler, SimpleTokenizer
+from data_pipeline.transforms import (
+    ImageNormalize,
+    ImageResize,
+    NumericScaler,
+    SimpleTokenizer,
+)
 
 
 class TestImageDataset(unittest.TestCase):
@@ -291,7 +295,7 @@ class TestTransforms(unittest.TestCase):
         tokenizer = SimpleTokenizer(max_length=10)
         texts = ["hello world", "goodbye world", "test text"]
         tokenizer.build_vocab(texts)
-        
+
         tokens = tokenizer("hello world")
         self.assertEqual(tokens.dtype, torch.long)
         self.assertLessEqual(len(tokens), 10)
@@ -299,9 +303,11 @@ class TestTransforms(unittest.TestCase):
     def test_numeric_scaler_minmax(self):
         """Test NumericScaler with minmax method."""
         scaler = NumericScaler(method="minmax")
-        data = torch.tensor([[0.0, 100.0], [10.0, 200.0], [20.0, 300.0]], dtype=torch.float32)
+        data = torch.tensor(
+            [[0.0, 100.0], [10.0, 200.0], [20.0, 300.0]], dtype=torch.float32
+        )
         scaler.fit(data)
-        
+
         scaled = scaler(data[0])
         self.assertTrue(torch.all(scaled >= 0))
         self.assertTrue(torch.all(scaled <= 1))
@@ -311,7 +317,7 @@ class TestTransforms(unittest.TestCase):
         scaler = NumericScaler(method="standard")
         data = torch.randn(100, 5)
         scaler.fit(data)
-        
+
         scaled = scaler(data[0])
         self.assertEqual(scaled.shape, data[0].shape)
 
@@ -360,8 +366,9 @@ class TestDatasetConfig(unittest.TestCase):
                     "dataset_type": "text",
                     "path": "/path/to/text.jsonl",
                     "format": "jsonl",
-                }
-            , f)
+                },
+                f,
+            )
             temp_path = f.name
 
         try:
@@ -378,11 +385,11 @@ class TestDatasetRegistry(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         self.registry = create_default_registry()
-        
+
         # Create sample datasets for testing
         self.temp_dir = tempfile.TemporaryDirectory()
         self.root = Path(self.temp_dir.name)
-        
+
         # Create image directories
         (self.root / "class1").mkdir()
         self._create_test_image(self.root / "class1" / "img1.ppm")
@@ -411,7 +418,7 @@ class TestDatasetRegistry(unittest.TestCase):
         )
         dataset = ImageDataset.from_config(config)
         self.registry.register_dataset("test_img", dataset, config)
-        
+
         retrieved = self.registry.get_dataset("test_img")
         self.assertIsNotNone(retrieved)
 
@@ -442,7 +449,7 @@ class TestDatasetRegistry(unittest.TestCase):
         )
         dataset = ImageDataset.from_config(config)
         self.registry.register_dataset("test_img", dataset)
-        
+
         removed = self.registry.remove_dataset("test_img")
         self.assertTrue(removed)
         self.assertIsNone(self.registry.get_dataset("test_img"))
@@ -517,7 +524,7 @@ class TestIntegration(unittest.TestCase):
         img_config = ImageDatasetConfig(name="images", path=str(self.root / "cat"))
         img_dataset = registry.load_from_config(img_config)
         img_loader = registry.create_dataloader(img_dataset, batch_size=1)
-        for images, labels in img_loader:
+        for images, _labels in img_loader:
             self.assertEqual(images.dim(), 4)  # (B, C, H, W)
             break
 
@@ -525,7 +532,7 @@ class TestIntegration(unittest.TestCase):
         text_config = TextDatasetConfig(name="text", path=str(self.text_file))
         text_dataset = registry.load_from_config(text_config)
         text_loader = registry.create_dataloader(text_dataset, batch_size=1)
-        for tokens, labels in text_loader:
+        for tokens, _labels in text_loader:
             self.assertEqual(tokens.dim(), 2)  # (B, seq_len)
             break
 
@@ -537,7 +544,7 @@ class TestIntegration(unittest.TestCase):
         )
         tab_dataset = registry.load_from_config(tab_config)
         tab_loader = registry.create_dataloader(tab_dataset, batch_size=1)
-        for features, labels in tab_loader:
+        for features, _labels in tab_loader:
             self.assertEqual(features.dim(), 2)  # (B, num_features)
             break
 

@@ -7,10 +7,11 @@ import contextlib
 import json
 import logging
 import threading
+from collections.abc import Callable, Iterable
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any
 
 import torch
 from torch import nn
@@ -20,8 +21,10 @@ from torch.utils.data import DataLoader
 
 from ml_core.training.metrics import AccuracyMetric, Metric
 
-
-DatasetLoader = Callable[["TrainingConfig"], "DatasetBundle" | Tuple[DataLoader, Optional[DataLoader]] | DataLoader]
+DatasetLoader = Callable[
+    ["TrainingConfig"],
+    "DatasetBundle" | tuple[DataLoader, DataLoader | None] | DataLoader,
+]
 ModelFactory = Callable[["TrainingConfig"], nn.Module]
 OptimizerFactory = Callable[[nn.Module, "TrainingConfig"], Optimizer]
 SchedulerFactory = Callable[[Optimizer, "TrainingConfig"], _LRScheduler]
@@ -41,13 +44,15 @@ class TrainingConfig:
     run_name: str = field(
         default_factory=lambda: datetime.utcnow().strftime("run-%Y%m%d-%H%M%S")
     )
-    artifact_dir: Optional[Path] = None
+    artifact_dir: Path | None = None
     trace_filename: str = "trace.jsonl"
     metrics_filename: str = "metrics.json"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
-        data["artifact_dir"] = str(data["artifact_dir"]) if data["artifact_dir"] else None
+        data["artifact_dir"] = (
+            str(data["artifact_dir"]) if data["artifact_dir"] else None
+        )
         return data
 
 
@@ -56,16 +61,16 @@ class DatasetBundle:
     """Container for train/validation loaders."""
 
     train: DataLoader
-    val: Optional[DataLoader] = None
+    val: DataLoader | None = None
 
 
 @dataclass
 class EpochResult:
     epoch: int
-    train_metrics: Dict[str, float]
-    val_metrics: Optional[Dict[str, float]] = None
+    train_metrics: dict[str, float]
+    val_metrics: dict[str, float] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "epoch": self.epoch,
             "train": self.train_metrics,
@@ -76,13 +81,13 @@ class EpochResult:
 @dataclass
 class TrainingResult:
     config: TrainingConfig
-    history: List[EpochResult]
-    checkpoints: List[Path]
+    history: list[EpochResult]
+    checkpoints: list[Path]
     artifact_dir: Path
     metrics_path: Path
     trace_path: Path
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "config": self.config.to_dict(),
             "history": [epoch.to_dict() for epoch in self.history],
@@ -123,9 +128,9 @@ class Trainer:
         model_factory: ModelFactory,
         optimizer_factory: OptimizerFactory,
         loss_fn: LossFunction | nn.Module,
-        scheduler_factory: Optional[SchedulerFactory] = None,
-        metrics: Optional[Dict[str, Metric]] = None,
-        logger: Optional[logging.Logger] = None,
+        scheduler_factory: SchedulerFactory | None = None,
+        metrics: dict[str, Metric] | None = None,
+        logger: logging.Logger | None = None,
     ) -> None:
         self.config = config
         self.dataset_loader = dataset_loader
@@ -168,11 +173,13 @@ class Trainer:
         model = self.model_factory(self.config).to(self.device)
         optimizer = self.optimizer_factory(model, self.config)
         scheduler = (
-            self.scheduler_factory(optimizer, self.config) if self.scheduler_factory else None
+            self.scheduler_factory(optimizer, self.config)
+            if self.scheduler_factory
+            else None
         )
 
-        history: List[EpochResult] = []
-        checkpoints: List[Path] = []
+        history: list[EpochResult] = []
+        checkpoints: list[Path] = []
 
         self.logger.info("Starting training run %s", self.config.run_name)
         self.trace_logger.log_event(
@@ -204,13 +211,18 @@ class Trainer:
                 )
 
             history.append(
-                EpochResult(epoch=epoch, train_metrics=train_metrics, val_metrics=val_metrics)
+                EpochResult(
+                    epoch=epoch, train_metrics=train_metrics, val_metrics=val_metrics
+                )
             )
 
             if scheduler is not None:
                 self._step_scheduler(scheduler, train_metrics, val_metrics)
 
-            if epoch % self.config.checkpoint_interval == 0 or epoch == self.config.epochs:
+            if (
+                epoch % self.config.checkpoint_interval == 0
+                or epoch == self.config.epochs
+            ):
                 checkpoint_path = self._save_checkpoint(model, optimizer, epoch)
                 checkpoints.append(checkpoint_path)
 
@@ -235,9 +247,9 @@ class Trainer:
         self,
         model: nn.Module,
         dataloader: DataLoader,
-        optimizer: Optional[Optimizer],
+        optimizer: Optimizer | None,
         train: bool,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         if dataloader is None:
             raise ValueError("DataLoader is required for training")
 
@@ -260,7 +272,9 @@ class Trainer:
                 outputs = model(inputs)
                 loss = self.loss_fn(outputs, targets)
                 loss_tensor = (
-                    loss if isinstance(loss, torch.Tensor) else torch.tensor(loss, device=self.device)
+                    loss
+                    if isinstance(loss, torch.Tensor)
+                    else torch.tensor(loss, device=self.device)
                 )
 
                 if train:
@@ -277,25 +291,37 @@ class Trainer:
                 for metric in metric_instances.values():
                     metric.update(outputs.detach(), targets)
 
-        metrics = {name: float(metric.compute()) for name, metric in metric_instances.items()}
+        metrics = {
+            name: float(metric.compute()) for name, metric in metric_instances.items()
+        }
         metrics["loss"] = running_loss / max(1, total_samples)
 
         if train:
             self.logger.info(
                 "Training - loss: %.4f %s",
                 metrics["loss"],
-                " ".join(f"{name}:{value:.4f}" for name, value in metrics.items() if name != "loss"),
+                " ".join(
+                    f"{name}:{value:.4f}"
+                    for name, value in metrics.items()
+                    if name != "loss"
+                ),
             )
         else:
             self.logger.info(
                 "Validation - loss: %.4f %s",
                 metrics["loss"],
-                " ".join(f"{name}:{value:.4f}" for name, value in metrics.items() if name != "loss"),
+                " ".join(
+                    f"{name}:{value:.4f}"
+                    for name, value in metrics.items()
+                    if name != "loss"
+                ),
             )
 
         return metrics
 
-    def _iterate_batches(self, dataloader: DataLoader) -> Iterable[Tuple[torch.Tensor, torch.Tensor]]:
+    def _iterate_batches(
+        self, dataloader: DataLoader
+    ) -> Iterable[tuple[torch.Tensor, torch.Tensor]]:
         for batch in dataloader:
             if isinstance(batch, dict):
                 inputs = batch["inputs"]
@@ -306,14 +332,14 @@ class Trainer:
                 raise ValueError("Unsupported batch format")
             yield inputs, targets
 
-    def _clone_metrics(self) -> Dict[str, Metric]:
+    def _clone_metrics(self) -> dict[str, Metric]:
         return {name: metric.clone() for name, metric in self.metrics.items()}
 
     def _step_scheduler(
         self,
         scheduler: _LRScheduler,
-        train_metrics: Dict[str, float],
-        val_metrics: Optional[Dict[str, float]],
+        train_metrics: dict[str, float],
+        val_metrics: dict[str, float] | None,
     ) -> None:
         if isinstance(scheduler, ReduceLROnPlateau):
             monitor = (val_metrics or train_metrics).get("loss")
@@ -326,7 +352,9 @@ class Trainer:
         lr = scheduler.optimizer.param_groups[0]["lr"]
         self.trace_logger.log_event("lr_updated", lr=lr)
 
-    def _save_checkpoint(self, model: nn.Module, optimizer: Optimizer, epoch: int) -> Path:
+    def _save_checkpoint(
+        self, model: nn.Module, optimizer: Optimizer, epoch: int
+    ) -> Path:
         checkpoint = {
             "epoch": epoch,
             "model_state_dict": model.state_dict(),
@@ -338,7 +366,7 @@ class Trainer:
         self.trace_logger.log_event("checkpoint_saved", epoch=epoch, path=str(path))
         return path
 
-    def _write_history(self, history: List[EpochResult]) -> None:
+    def _write_history(self, history: list[EpochResult]) -> None:
         payload = [epoch.to_dict() for epoch in history]
         with self.metrics_path.open("w", encoding="utf-8") as handle:
             json.dump(payload, handle, indent=2)
@@ -366,7 +394,10 @@ class Trainer:
         if device_name == "auto":
             if torch.cuda.is_available():
                 target = "cuda"
-            elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+            elif (
+                getattr(torch.backends, "mps", None)
+                and torch.backends.mps.is_available()
+            ):
                 target = "mps"
             else:
                 target = "cpu"

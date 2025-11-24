@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Tuple
 
 import torch
 from PIL import Image
@@ -32,11 +31,11 @@ class ImageDataset(BaseDataset):
         root_dir: str | Path,
         name: str = "image_dataset",
         description: str = "",
-        image_size: Tuple[int, int] = (224, 224),
+        image_size: tuple[int, int] = (224, 224),
         normalize: bool = True,
-        mean: Tuple[float, float, float] = (0.485, 0.456, 0.406),
-        std: Tuple[float, float, float] = (0.229, 0.224, 0.225),
-        transforms: Optional[Compose] = None,
+        mean: tuple[float, float, float] = (0.485, 0.456, 0.406),
+        std: tuple[float, float, float] = (0.229, 0.224, 0.225),
+        transforms: Compose | None = None,
     ) -> None:
         """Initialize image dataset.
 
@@ -70,7 +69,14 @@ class ImageDataset(BaseDataset):
 
                 # Find all image files
                 for image_path in sorted(class_dir.glob("*")):
-                    if image_path.suffix.lower() in [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".ppm"]:
+                    if image_path.suffix.lower() in [
+                        ".jpg",
+                        ".jpeg",
+                        ".png",
+                        ".gif",
+                        ".bmp",
+                        ".ppm",
+                    ]:
                         self._samples.append((image_path, class_idx))
 
                 class_idx += 1
@@ -102,10 +108,11 @@ class ImageDataset(BaseDataset):
         try:
             image = Image.open(image_path).convert("RGB")
         except Exception as e:
-            raise IOError(f"Failed to load image {image_path}: {e}")
+            raise OSError(f"Failed to load image {image_path}: {e}") from e
 
         # Convert to tensor (H, W, C) -> (C, H, W)
         import numpy as np
+
         image_array = np.array(image, dtype="float32").transpose(2, 0, 1)
         image_tensor = torch.from_numpy(image_array)
 

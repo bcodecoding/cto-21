@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
-from pathlib import Path
-from typing import Any, Dict, List, Optional
-
 import json
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import Any
 
 
 @dataclass
@@ -17,7 +16,7 @@ class DatasetConfig:
     dataset_type: str
     description: str = ""
     path: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """Convert config to dictionary."""
@@ -38,7 +37,9 @@ class DatasetConfig:
         elif config_type == "tabular":
             return TabularDatasetConfig.from_dict(data)
         else:
-            return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+            return cls(
+                **{k: v for k, v in data.items() if k in cls.__dataclass_fields__}
+            )
 
     @classmethod
     def from_json(cls, json_str: str) -> DatasetConfig:
@@ -48,7 +49,7 @@ class DatasetConfig:
     @classmethod
     def from_file(cls, path: str | Path) -> DatasetConfig:
         """Create config from JSON file."""
-        with open(path, "r") as f:
+        with open(path) as f:
             return cls.from_dict(json.load(f))
 
 
@@ -61,7 +62,7 @@ class ImageDatasetConfig(DatasetConfig):
     normalize: bool = True
     mean: tuple[float, float, float] = (0.485, 0.456, 0.406)
     std: tuple[float, float, float] = (0.229, 0.224, 0.225)
-    class_mapping: Optional[Dict[str, int]] = None
+    class_mapping: dict[str, int] | None = None
 
     def to_dict(self) -> dict:
         """Convert config to dictionary."""
@@ -99,9 +100,9 @@ class TextDatasetConfig(DatasetConfig):
     format: str = "jsonl"  # 'jsonl' or 'csv'
     prompt_column: str = "prompt"
     label_column: str = "label"
-    max_length: Optional[int] = None
+    max_length: int | None = None
     tokenizer: str = "simple"  # 'simple' or other tokenizer names
-    vocab_size: Optional[int] = None
+    vocab_size: int | None = None
 
     @classmethod
     def from_dict(cls, data: dict) -> TextDatasetConfig:
@@ -116,9 +117,9 @@ class TabularDatasetConfig(DatasetConfig):
     """Configuration for tabular datasets."""
 
     dataset_type: str = "tabular"
-    feature_columns: Optional[List[str]] = None
-    label_column: Optional[str] = None
-    label_mapping: Optional[Dict[str, int]] = None
+    feature_columns: list[str] | None = None
+    label_column: str | None = None
+    label_mapping: dict[str, int] | None = None
     normalize: bool = True
     dtype: str = "float32"
 
