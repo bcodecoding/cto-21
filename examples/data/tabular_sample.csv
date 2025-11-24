@@ -1,0 +1,13 @@
+age,income,credit_score,employment_years,label
+25,45000,650,2,approved
+35,85000,750,8,approved
+22,32000,580,1,denied
+45,120000,800,15,approved
+28,55000,620,3,denied
+38,95000,760,10,approved
+52,140000,820,20,approved
+23,38000,600,2,denied
+41,105000,790,12,approved
+19,28000,550,1,denied
+30,68000,700,5,approved
+33,78000,730,7,approved

@@ -1,0 +1,9 @@
+{"prompt": "This movie was absolutely fantastic", "label": "positive"}
+{"prompt": "I did not like this product at all", "label": "negative"}
+{"prompt": "The experience was okay nothing special", "label": "neutral"}
+{"prompt": "Amazing performance and great quality", "label": "positive"}
+{"prompt": "Terrible waste of time and money", "label": "negative"}
+{"prompt": "It works as expected", "label": "neutral"}
+{"prompt": "Outstanding service and very satisfied", "label": "positive"}
+{"prompt": "Completely disappointed with the results", "label": "negative"}
+{"prompt": "Average product nothing remarkable", "label": "neutral"}
