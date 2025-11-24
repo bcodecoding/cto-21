@@ -1,0 +1,15 @@
+{
+  "name": "sample_text",
+  "dataset_type": "text",
+  "description": "Sample text dataset with sentiment labels",
+  "path": "examples/data/text_samples.jsonl",
+  "format": "jsonl",
+  "prompt_column": "prompt",
+  "label_column": "label",
+  "max_length": 50,
+  "tokenizer": "simple",
+  "metadata": {
+    "num_classes": 3,
+    "classes": ["negative", "neutral", "positive"]
+  }
+}

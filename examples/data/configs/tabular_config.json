@@ -1,0 +1,14 @@
+{
+  "name": "sample_tabular",
+  "dataset_type": "tabular",
+  "description": "Sample tabular dataset with loan approval prediction",
+  "path": "examples/data/tabular_sample.csv",
+  "feature_columns": ["age", "income", "credit_score", "employment_years"],
+  "label_column": "label",
+  "normalize": true,
+  "dtype": "float32",
+  "metadata": {
+    "num_classes": 2,
+    "classes": ["approved", "denied"]
+  }
+}

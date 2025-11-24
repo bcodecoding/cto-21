@@ -21,6 +21,22 @@ A full-stack machine learning training platform with FastAPI backend and React f
 │   ├── storage.py    # Run metadata storage
 │   ├── trainer.py    # Training service
 │   └── config.py     # Configuration
+├── data_pipeline/    # Modular data loading & preprocessing
+│   ├── __init__.py
+│   ├── base.py       # Base dataset and transform classes
+│   ├── configs.py    # Configuration objects (JSON/YAML compatible)
+│   ├── transforms.py # Image, text, tabular transforms
+│   ├── registries.py # Dataset registry
+│   ├── loaders/
+│   │   ├── image_loader.py      # Image folder datasets
+│   │   ├── text_loader.py       # Text (JSONL/CSV) datasets
+│   │   └── tabular_loader.py    # Tabular CSV datasets
+│   └── README.md     # Data pipeline documentation
+├── ml_core/          # ML training engine
+│   ├── datasets/     # Dataset utilities
+│   ├── models/       # Model factories
+│   ├── training/     # Trainer and metrics
+│   └── utils/        # Utility functions
 ├── ui/               # React frontend
 │   ├── src/
 │   │   ├── components/
@@ -32,8 +48,20 @@ A full-stack machine learning training platform with FastAPI backend and React f
 │   │   └── main.jsx
 │   ├── package.json
 │   └── vite.config.js
+├── examples/         # Example scripts and datasets
+│   ├── data_pipeline_demo.py    # Data pipeline usage examples
+│   ├── DATA_PIPELINE.md         # Data pipeline examples guide
+│   ├── train_cnn.py             # CNN training example
+│   ├── README.md                # Examples documentation
+│   └── data/                    # Sample datasets
+│       ├── images/              # Sample images (cat/dog)
+│       ├── text_samples.jsonl   # Sample text data
+│       ├── tabular_sample.csv   # Sample tabular data
+│       └── configs/             # Sample configurations
 ├── data/             # Dataset storage
 ├── runs/             # Training run metadata
+├── tests/            # Unit and integration tests
+│   └── test_data_pipeline.py    # Data pipeline tests
 └── requirements.txt
 ```
 
@@ -232,6 +260,86 @@ python examples/train_cnn.py
 ```
 
 Review the generated trace (`trace.jsonl`) and `metrics.json` files inside the artifact directory to inspect how the trainer reports progress.
+
+## Data Pipeline Module
+
+The repository includes a modular data loading and preprocessing layer (`data_pipeline/`) that provides abstractions for dataset management and concrete loaders for multiple data modalities.
+
+### Features
+
+- **Image Dataset Loader**: Load images from folder structures with automatic resizing and normalization
+- **Text Dataset Loader**: Load text from JSONL/CSV files with tokenization
+- **Tabular Dataset Loader**: Load CSV files with automatic numeric scaling
+- **Configuration-Based Instantiation**: Define datasets via JSON configuration files
+- **Registry System**: Central management of datasets and loaders
+- **PyTorch Integration**: Full `Dataset`/`DataLoader` compatibility
+
+### Quick Start
+
+```python
+from data_pipeline import ImageDatasetConfig, create_default_registry
+
+# Define configuration
+config = ImageDatasetConfig(
+    name="my_images",
+    path="path/to/images",
+    image_size=(224, 224),
+    normalize=True,
+)
+
+# Load dataset
+registry = create_default_registry()
+dataset = registry.load_from_config(config)
+loader = registry.create_dataloader(dataset, batch_size=32)
+
+# Iterate batches
+for images, labels in loader:
+    # images: (B, 3, 224, 224)
+    # labels: (B,)
+    pass
+```
+
+### Running the Demo
+
+See all dataset types in action:
+
+```bash
+python examples/data_pipeline_demo.py
+```
+
+This runs demonstrations of:
+1. Image dataset loading with transforms
+2. Text dataset loading with tokenization
+3. Tabular dataset loading with numeric scaling
+4. Configuration-based dataset instantiation
+5. PyTorch DataLoader integration
+
+### Sample Datasets
+
+Located in `examples/data/`:
+
+- **Images**: `images/` - Sample cat and dog images (2 classes, 6 images total)
+- **Text**: `text_samples.jsonl` - Sentiment examples (3 classes, 9 samples)
+- **Tabular**: `tabular_sample.csv` - Loan approval data (2 classes, 12 samples)
+- **Configs**: `configs/` - JSON configuration examples for all dataset types
+
+### Documentation
+
+- **[Data Pipeline README](data_pipeline/README.md)** - Complete API reference and guide
+- **[Examples Guide](examples/DATA_PIPELINE.md)** - Usage examples and custom dataset creation
+- **[Tests](tests/test_data_pipeline.py)** - Comprehensive unit and integration tests
+
+### Supported Formats
+
+**Images**: `.jpg`, `.jpeg`, `.png`, `.gif`, `.bmp`, `.ppm`
+- Expected structure: `root_dir/class1/img1.jpg`, `root_dir/class2/img2.jpg`
+
+**Text**: JSONL or CSV
+- JSONL: `{"prompt": "text", "label": "class"}`
+- CSV: `prompt,label` header with rows
+
+**Tabular**: CSV with headers
+- `feature1,feature2,...,label`
 
 ## Development
 
